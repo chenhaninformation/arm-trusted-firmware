@@ -1,197 +1,146 @@
-ARM Trusted Firmware - version 1.3
-==================================
+ATF for ESPRESSObin
+===================
 
-ARM Trusted Firmware provides a reference implementation of secure world
-software for [ARMv8-A], including a [Secure Monitor] [TEE-SMC] executing at
-Exception Level 3 (EL3). It implements various ARM interface standards, such as
-the Power State Coordination Interface ([PSCI]), Trusted Board Boot Requirements
-(TBBR, ARM DEN0006C-1) and [SMC Calling Convention][SMCCC]. As far as possible
-the code is designed for reuse or porting to other ARMv8-A model and hardware
-platforms.
+This branch of ATF is for ESPRESSObin board and it is based on
+[Marvell ATF][Marvell ATF] branch
+[atf-v1.3-armada-17.10][atf-v1.3-armada-17.10].
 
-ARM will continue development in collaboration with interested parties to
-provide a full reference implementation of PSCI, TBBR and Secure Monitor code
-to the benefit of all developers working with ARMv8-A TrustZone technology.
+We only provide the build steps and some notes. You can find documentation at
+both the mainline of [ATF][ATF] and most recent release of
+[Marvell ATF][Marvell ATF].
 
+******
 
-License
--------
+What is ATF (General)
+---------------------
 
-The software is provided under a BSD-3-Clause [license]. Contributions to this
-project are accepted under the same license with developer sign-off as
-described in the [Contributing Guidelines].
+ARM TrustZone Technology is a hardware design execution environment isolation,
+the SoC can running in Trusted Zone or None-Trusted Zone independently.
 
-This project contains code from other projects as listed below. The original
-license text is included in those source files.
+ATF aka ARM-Trusted-Firmware, is an open source software implementation of
+ARM Trusted Zone Technology, it will running as an independent system.
 
-*   The stdlib source code is derived from FreeBSD code.
+The None-Trusted Zone (like Linux/U-boot) act as client, the Truste Zone
+(like ATF/OpenTEE) act as server. Client can send a request to the server
+side, and the scheduler will handle the CPU to the server and server handle
+CPU to client agine when sending the resposes back to the client.
 
-*   The libfdt source code is dual licensed. It is used by this project under
-    the terms of the BSD-2-Clause license.
+e.g. Request a fingerprint verification on a smart phone.
 
+ARM TrustZone is security sensitive, it also design to do some critical
+initialization in most of the SoC vender.
 
-This Release
-------------
+For more information, please refer to [ATF][ATF] repository on github.
 
-This release provides a suitable starting point for productization of secure
-world boot and runtime firmware, executing in either the AArch32 or AArch64
-execution state.
+ATF on Marvell SoC
+------------------
 
-Users are encouraged to do their own security validation, including penetration
-testing, on any secure world code derived from ARM Trusted Firmware.
+Marvell's ATF porting require specifying the DDR memory layout in order to
+initialize the DDR and set the DDR rate (800MHz or 1000MHz etc.) at booting
+stage. The DDR layout file is not included in this repository, but in
+[a3700-utils-ch][A3700-utils-marvell-ch] repository.
 
-### Functionality
+[a3700-utils-ch][A3700-utils-marvell-ch] repository is just the fork of
+[a3700-utils][A3700-utils-marvell] in order to add our own patches. And the
+branch [A3700\_utils-armada-17.10-ch-dev][A3700_utils-armada-17.10-ch-dev] of
+[a3700-utils-ch][A3700-utils-marvell-ch] is based on
+[a3700-utils][A3700-utils-marvell-ch] branch 
+[A3700\_utils-armada-17.10][A3700_utils-armada-17.10] as well.
 
-*   Initialization of the secure world (for example, exception vectors, control
-    registers, interrupt controller and interrupts for the platform), before
-    transitioning into the normal world at the Exception Level and Register
-    Width specified by the platform.
+You need download [a3700-utils-ch][A3700-utils-marvell-ch] branch
+[A3700\_utils-armada-17.10-ch-dev][A3700_utils-armada-17.10-ch-dev] to against
+this branch of ATF in order to build ATF for ESPRESSObin board.
 
-*   Library support for CPU specific reset and power down sequences. This
-    includes support for errata workarounds.
+Note
+====
 
-*   Drivers for both versions 2.0 and 3.0 of the ARM Generic Interrupt
-    Controller specifications (GICv2 and GICv3). The latter also enables GICv3
-    hardware systems that do not contain legacy GICv2 support.
+ATF Boot Stage
+--------------
 
-*   Drivers to enable standard initialization of ARM System IP, for example
-    Cache Coherent Interconnect (CCI), Cache Coherent Network (CCN), Network
-    Interconnect (NIC) and TrustZone Controller (TZC).
+ATF design with multiple boot stage (BL1, BL2, BL3), BL3 (aka BootLoad Stage
+3) also design multiple stage. Overall boot sequece are shown in follow:
 
-*   SMC (Secure Monitor Call) handling, conforming to the [SMC Calling
-    Convention][SMCCC] using an EL3 runtime services framework.
+BL1 --> BL2 --> BL31 --> BL32 --> BL33
 
-*   [PSCI] library support for the Secondary CPU Boot, CPU Hotplug, CPU Idle
-    and System Shutdown/Reset/Suspend use-cases.
-    This library is pre-integrated with the provided AArch64 EL3 Runtime
-    Software, and is also suitable for integration into other EL3 Runtime
-    Software.
+ATF already take care of BL1 to BL32, the BL33 is the final payload of
+None-Trusted bootloader provide by user, common use U-boot as payload.
 
-*   A minimal AArch32 Secure Payload to demonstrate [PSCI] library integration
-    on platforms with AArch32 EL3 Runtime Software.
+From U-boot POV, the ATF is the wrapper layer for U-boot to make the U-boot
+to be loaded and running by ATF.
 
-*   Secure Monitor library code such as world switching, EL1 context management
-    and interrupt routing.
-    When using the provided AArch64 EL3 Runtime Software, this must be
-    integrated with a Secure-EL1 Payload Dispatcher (SPD) component to
-    customize the interaction with a Secure-EL1 Payload (SP), for example a
-    Secure OS.
-
-*   A Test Secure-EL1 Payload and Dispatcher to demonstrate AArch64 Secure
-    Monitor functionality and Secure-EL1 interaction with PSCI.
-
-*   AArch64 SPDs for the [OP-TEE Secure OS] and [NVidia Trusted Little Kernel]
-    [NVidia TLK].
-
-*   A Trusted Board Boot implementation, conforming to all mandatory TBBR
-    requirements. This includes image authentication using certificates, a
-    Firmware Update (or recovery mode) boot flow, and packaging of the various
-    firmware images into a Firmware Image Package (FIP) to be loaded from
-    non-volatile storage.
-    The TBBR implementation is currently only supported in the AArch64 build.
-
-*   Support for alternative boot flows. Some platforms have their own boot
-    firmware and only require the AArch64 EL3 Runtime Software provided by this
-    project. Other platforms require minimal initialization before booting
-    into an arbitrary EL3 payload.
-
-For a full description of functionality and implementation details, please
-see the [Firmware Design] and supporting documentation. The [Change Log]
-provides details of changes made since the last release.
-
-### Platforms
-
-The AArch64 build of this release has been tested on variants r0, r1 and r2
-of the [Juno ARM Development Platform] [Juno] with [Linaro Release 16.06].
-
-The AArch64 build of this release has been tested on the following ARM
-[FVP]s (64-bit host machine only):
-
-*   `Foundation_Platform` (Version 10.1, Build 10.1.32)
-*   `FVP_Base_AEMv8A-AEMv8A` (Version 7.7, Build 0.8.7701)
-*   `FVP_Base_Cortex-A57x4-A53x4` (Version 7.7, Build 0.8.7701)
-*   `FVP_Base_Cortex-A57x1-A53x1` (Version 7.7, Build 0.8.7701)
-*   `FVP_Base_Cortex-A57x2-A53x4` (Version 7.7, Build 0.8.7701)
-
-The AArch32 build of this release has been tested on the following ARM
-[FVP]s (64-bit host machine only):
-
-*   `FVP_Base_AEMv8A-AEMv8A` (Version 7.7, Build 0.8.7701)
-*   `FVP_Base_Cortex-A32x4` (Version 10.1, Build 10.1.32)
-
-The Foundation FVP can be downloaded free of charge. The Base FVPs can be
-licensed from ARM: see [www.arm.com/fvp] [FVP].
-
-This release also contains the following platform support:
-
-*   MediaTek MT6795 and MT8173 SoCs
-*   NVidia T210 and T132 SoCs
-*   QEMU emulator
-*   RockChip RK3368 and RK3399 SoCs
-*   Xilinx Zynq UltraScale + MPSoC
-
-### Still to Come
-
-*   AArch32 TBBR support and ongoing TBBR alignment.
-
-*   More platform support.
-
-*   Ongoing support for new architectural features, CPUs and System IP.
-
-*   Ongoing [PSCI] alignment and feature support.
-
-*   Ongoing security hardening, optimization and quality improvements.
-
-For a full list of detailed issues in the current code, please see the [Change
-Log] and the [GitHub issue tracker].
-
-
-Getting Started
+Memory topology
 ---------------
 
-Get the Trusted Firmware source code from
-[GitHub](https://www.github.com/ARM-software/arm-trusted-firmware).
+ESPRESSObin board can mount two memory chip, current support DDR3/DDR4
+512MB/1GB memory chip. Possible memory chip layout are shown in table below
 
-See the [User Guide] for instructions on how to install, build and use
-the Trusted Firmware with the ARM [FVP]s.
+|DDR\_TOPOLOGY|DDR type|Chip Size|Chip Select|Memory Size|
+|:-----------:|:------:|:-------:|:---------:|:---------:|
+|     0       |  DDR3  |  512MB  |     1     |   512MB   |
+|     1       |  DDR4  |  512MB  |     1     |   512MB   |
+|     2       |  DDR3  |  512MB  |     2     |    1GB    |
+|     3       |  DDR4  |   1GB   |     2     |    2GB    |
+|     4       |  DDR3  |   1GB   |     1     |    1GB    |
+|     5       |  DDR4  |   1GB   |     1     |    1GB    |
+|     6(3)    |  DDR4  |   1GB   |     2     |    2GB    |
+|     7       |  DDR3  |   1GB   |     2     |    2GB    |
+|     8       |  DDR4  |  512MB  |     2     |    1GB    |
 
-See the [Firmware Design] for information on how the ARM Trusted Firmware works.
+ATF is responsable for initialize the DDR memory, you must specifing the memory
+topology type above when compile the ATF.
 
-See the [Porting Guide] as well for information about how to use this
-software on another ARMv8-A platform.
+Build Step
+==========
 
-See the [Contributing Guidelines] for information on how to contribute to this
-project and the [Acknowledgments] file for a list of contributors to the
-project.
+There is two types of variables need to be noted, one is the environment
+variable BL33 and the other variables of Makefile specify when run "make"
+command.
 
-### Feedback and support
+Environment variable BL33: export BL33=/path/to/u-boot.bin
 
-ARM welcomes any feedback on the Trusted Firmware. Please send feedback using
-the [GitHub issue tracker].
+Makefile variables: make var1=value1 var2=value2
+Supported Makefile variables can be find [here][build.txt].
 
-ARM licensees may contact ARM directly via their partner managers.
+Here is a build example from official site after export BL33 variable from
+envirionment variables:
+```
+make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 SECURE=0 \
+     CLOCKSPRESET=CPU_1000_DDR_800 DDR_TOPOLOGY=2 BOOTDEV=SPINOR PARTNUM=0 \
+     WTP=../a3700-utils/ PLAT=a3700 all fip
+```
 
+* DEBUG: Debug enable? default disable.(=1 enable, =0 disable)
+* USE\_COHERENT\_MEM: It should be set to 0, see [build.txt][build.txt]
+* LOG\_LEVEL: Output log level, see [build.txt][build.txt]
+* SECURE: Typo, shold be MARVELL\_SECURE\_BOOT=0, see PR#1731 of [ATF][ATF]
+* CLOCKSPRESET: CPU/DDR frequency, see [build.txt][build.txt]
+* DDR\_TOPOLOGY: Index of DDR topology in a3700-utils-marvell-ch, we already
+list it above
+* BOOTDEV: Boot device that store ATF image, see [build.txt][build.txt]
+* WTP: /path/to/a3700-utils
+* PLAT: Platform, must be a3700
+* all & fip: Build output image
 
-- - - - - - - - - - - - - - - - - - - - - - - - - -
+More information can be find [here][Build From Source - Bootloader].
 
-_Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved._
+TODO
+====
 
+******
 
-[License]:                  ./license.md "BSD license for ARM Trusted Firmware"
-[Contributing Guidelines]:  ./contributing.md "Guidelines for contributors"
-[Acknowledgments]:          ./acknowledgements.md "Contributor acknowledgments"
-[Change Log]:               ./docs/change-log.md
-[User Guide]:               ./docs/user-guide.md
-[Firmware Design]:          ./docs/firmware-design.md
-[Porting Guide]:            ./docs/porting-guide.md
+*Copyright (C) 2018, Hunan ChenHan Information Technology Co., Ltd. All rights reserved.*
 
-[ARMv8-A]:               http://www.arm.com/products/processors/armv8-architecture.php "ARMv8-A Architecture"
-[FVP]:                   http://www.arm.com/fvp "ARM's Fixed Virtual Platforms"
-[Juno]:                  http://www.arm.com/products/tools/development-boards/versatile-express/juno-arm-development-platform.php "Juno ARM Development Platform"
-[PSCI]:                  http://infocenter.arm.com/help/topic/com.arm.doc.den0022c/DEN0022C_Power_State_Coordination_Interface.pdf "Power State Coordination Interface PDD (ARM DEN 0022C)"
-[SMCCC]:                 http://infocenter.arm.com/help/topic/com.arm.doc.den0028a/index.html "SMC Calling Convention PDD (ARM DEN 0028A)"
-[TEE-SMC]:               http://www.arm.com/products/processors/technologies/trustzone/tee-smc.php "Secure Monitor and TEEs"
-[GitHub issue tracker]:  https://github.com/ARM-software/tf-issues/issues
-[OP-TEE Secure OS]:      https://github.com/OP-TEE/optee_os
-[NVidia TLK]:            http://nv-tegra.nvidia.com/gitweb/?p=3rdparty/ote_partner/tlk.git;a=summary
-[Linaro Release 16.06]:  https://community.arm.com/docs/DOC-10952#jive_content_id_Linaro_Release_1606
+[ATF]: https://github.com/ARM-software/arm-trusted-firmware "ARM Trusted Firmware"
+
+[Marvell ATF]: https://github.com/MarvellEmbeddedProcessors/atf-marvell "Marvell ATF"
+[atf-v1.3-armada-17.10]: https://github.com/MarvellEmbeddedProcessors/atf-marvell/tree/atf-v1.3-armada-17.10 "atf-v1.3-armada-17.10"
+
+[A3700-utils-marvell-ch]: https://github.com/chenhaninformation/A3700-utils-marvell "A3700-utils-marvell-ch"
+[A3700_utils-armada-17.10-ch-dev]: https://github.com/chenhaninformation/A3700-utils-marvell/tree/A3700_utils-armada-17.10-ch-dev
+
+[A3700-utils-marvell]: https://github.com/MarvellEmbeddedProcessors/A3700-utils-marvell "A3700-utils-marvell"
+[A3700_utils-armada-17.10]: https://github.com/MarvellEmbeddedProcessors/A3700-utils-marvell/tree/A3700_utils-armada-17.10
+
+[build.txt]: ./docs/marvell/build.txt#L40
+
+[Build From Source - Bootloader]: http://wiki.espressobin.net/tiki-index.php?page=Build+From+Source+-+Bootloader "Build From Source - Bootloader"
