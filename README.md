@@ -146,11 +146,16 @@ Build Steps
 -----------
 
 ```
-1. export BL33=/path/to/u-boot/u-boot.bin
-2. export CROSS\_COMPILE=aarch64-linux-gnu-
-3. make DEBUG=0 USE\_COHERENT\_MEM=0 LOG\_LEVEL=20 MARVELL\_SECURE\_BOOT=0 \
+1. git clone -b A3700_utils-armada-17.10-ch-dev \
+		https://github.com/chenhaninformation/A3700-utils-marvell.git
+2. git clone -b atf-v1.3-armada-17.10-ch-dev \
+		https://github.com/chenhaninformation/arm-trusted-firmware.git
+3. cd arm-trusted-firmware/
+4. export BL33=/path/to/u-boot/u-boot.bin
+5. export CROSS\_COMPILE=aarch64-linux-gnu-
+6. make DEBUG=0 USE\_COHERENT\_MEM=0 LOG\_LEVEL=20 MARVELL\_SECURE\_BOOT=0 \
 	CLOCKSPRESET=CPU_1000_DDR_800 DDR_TOPOLOGY=2 BOOTDEV=SPINOR PARTNUM=0 \
-	WTP=/path/to/A3700-utils-marvell PLAT=a3700 all fip
+	WTP=../A3700-utils-marvell PLAT=a3700 all fip
 ```
 
 ### Flashable Image
