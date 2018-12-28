@@ -140,6 +140,12 @@ the gcc:
 sudo apt-get install gcc-arm-linux-gnueabi
 ```
 
+***WARNING***: Mentioned in **[U-boot][u-boot-2017.03-armada-17.10-ch-dev]**,
+as well as this branch, you need use Linaro release gcc to compile ATF. Other
+compiler may cause the ATF won't boot. Tested with Linaro gcc 5.2, 5.5 and
+8.0. You can follow the instructions in U-boot link above to install and
+specify the correct compiler.
+
 More information can be find [here][Build From Source - Bootloader].
 
 Build Steps
@@ -152,8 +158,9 @@ Build Steps
 		https://github.com/chenhaninformation/arm-trusted-firmware.git
 3. cd arm-trusted-firmware/
 4. export BL33=/path/to/u-boot/u-boot.bin
-5. export CROSS_COMPILE=aarch64-linux-gnu-
-6. make DEBUG=0 USE_COHERENT_MEM=0 LOG_LEVEL=20 MARVELL_SECURE_BOOT=0 \
+5. export PATH=/path/to/linaro-gcc/bin:$PATH
+6. export CROSS_COMPILE=aarch64-linux-gnu-
+7. make DEBUG=0 USE_COHERENT_MEM=0 LOG_LEVEL=20 MARVELL_SECURE_BOOT=0 \
 	CLOCKSPRESET=CPU_1000_DDR_800 DDR_TOPOLOGY=2 BOOTDEV=SPINOR PARTNUM=0 \
 	WTP=../A3700-utils-marvell PLAT=a3700 all fip
 ```
@@ -200,5 +207,7 @@ TODO
 [A3700_utils-armada-17.10]: https://github.com/MarvellEmbeddedProcessors/A3700-utils-marvell/tree/A3700_utils-armada-17.10
 
 [build.txt]: ./docs/marvell/build.txt#L40
+
+[u-boot-2017.03-armada-17.10-ch-dev]: https://github.com/chenhaninformation/u-boot/tree/u-boot-2017.03-armada-17.10-ch-dev
 
 [Build From Source - Bootloader]: http://wiki.espressobin.net/tiki-index.php?page=Build+From+Source+-+Bootloader "Build From Source - Bootloader"
