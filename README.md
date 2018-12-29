@@ -120,14 +120,20 @@ make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 SECURE=0 \
 
 * **DEBUG**: Debug enable? default disable.(=1 enable, =0 disable)
 * **USE\_COHERENT\_MEM**: It should be set to 0, see [build.txt][build.txt]
-* **LOG\_LEVEL**: Output log level, see [build.txt][build.txt]
-* **SECURE**: Typo, shold be MARVELL\_SECURE\_BOOT=0, see PR#1731 of
+* **LOG\_LEVEL**: Output log level, default 20 when debug is diable, default
+40 when debug is enable. See [build.txt][build.txt]
+* **SECURE**: Typo, default MARVELL\_SECURE\_BOOT=0, see PR#1731 of
 [ATF][ATF]
-* **CLOCKSPRESET**: CPU/DDR frequency, see [build.txt][build.txt]
+* **CLOCKSPRESET**: CPU/DDR frequency, default CPU\_800\_DDR\_800,
+see [build.txt][build.txt]
 * **DDR\_TOPOLOGY**: Index of DDR topology in a3700-utils-marvell-ch, we
 already list this index table above
 * **BOOTDEV**: Boot device that store ATF image, must match the boot device
-compiled with U-boot. See [build.txt][build.txt]
+compiled with U-boot. Current tested boot device are "SPINOR" and "EMMCNORM",
+See [build.txt][build.txt]
+* **PARTNUM**: Only usefula when BOOTDEV=EMMCNORM, this value MUST equal to
+CONFIG\_SYS\_MMC\_ENV\_PART in U-boot: 0 -- DATA, 1 -- BOOT0, 2 -- BOOT1,
+currently we use BOOT0, aka PARTNUM=1
 * **WTP**: /path/to/a3700-utils
 * **PLAT**: Platform, must be a3700
 * **all & fip**: Build output image
@@ -162,6 +168,19 @@ Build Steps
 6. export CROSS_COMPILE=aarch64-linux-gnu-
 7. make DEBUG=0 USE_COHERENT_MEM=0 LOG_LEVEL=20 MARVELL_SECURE_BOOT=0 \
 	CLOCKSPRESET=CPU_1000_DDR_800 DDR_TOPOLOGY=2 BOOTDEV=SPINOR PARTNUM=0 \
+	WTP=../A3700-utils-marvell PLAT=a3700 all fip
+```
+
+Make Example, most of the make option are set to default
+
+1. Build for DDR3-1G-2CS, boot from SPI NOR flash
+```
+make DDR_TOPLOGY=2 BOOTDEV=SPINOR
+	WTP=../A3700-utils-marvell PLAT=a3700 all fip
+```
+2. Build for DDR3-1G-2CS, boot from eMMC BOOT0
+```
+make DDR_TOPLOGY=2 BOOTDEV=EMMCNORM PARTNUM=1
 	WTP=../A3700-utils-marvell PLAT=a3700 all fip
 ```
 
